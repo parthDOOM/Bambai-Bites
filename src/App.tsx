@@ -317,7 +317,7 @@ function App() {
     <div className={styles.app}>
       <header className={styles.header}>
         <div className={styles.branding}>
-          <img src="/favicon.png" alt="Logo" className={styles.logo} />
+          <img src={`${import.meta.env.BASE_URL}favicon.png`} alt="Logo" className={styles.logo} />
           <div className={styles.titleContainer}>
             <input 
               type="text" 
