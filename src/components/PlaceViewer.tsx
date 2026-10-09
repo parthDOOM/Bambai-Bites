@@ -23,27 +23,29 @@ const FoodItemView: React.FC<{ item: FoodItem; onImageClick: (url: string) => vo
   }, [item.photoId]);
 
   return (
-    <div style={{ background: 'var(--bg-color)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+    <div style={{ background: 'var(--bg-color)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-color)', width: '280px', flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
         <h4 style={{ margin: 0, fontSize: '16px' }}>{item.name}</h4>
-        <div style={{ display: 'flex', gap: '2px' }}>
+        <div style={{ display: 'flex', gap: '2px', flexShrink: 0, marginLeft: '8px' }}>
           {[1,2,3,4,5].map(star => (
-            <span key={star} style={{ color: star <= item.stars ? '#eab308' : 'var(--border-color)', fontSize: '16px' }}>
+            <span key={star} style={{ color: star <= item.stars ? '#eab308' : 'var(--border-color)', fontSize: '14px' }}>
               ★
             </span>
           ))}
         </div>
       </div>
       {photoUrl && (
-        <img 
-          src={photoUrl} 
-          alt={item.name} 
-          onClick={() => onImageClick(photoUrl)}
-          style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '6px', marginBottom: '12px', cursor: 'pointer' }} 
-        />
+        <div style={{ background: '#1f2937', borderRadius: '6px', marginBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img 
+            src={photoUrl} 
+            alt={item.name} 
+            onClick={() => onImageClick(photoUrl)}
+            style={{ width: '100%', height: '200px', objectFit: 'contain', borderRadius: '6px', cursor: 'pointer' }} 
+          />
+        </div>
       )}
       {item.review && (
-        <p style={{ margin: 0, fontSize: '14px', color: 'var(--muted-text)', lineHeight: 1.5 }}>
+        <p style={{ margin: 0, fontSize: '14px', color: 'var(--muted-text)', lineHeight: 1.5, flex: 1 }}>
           {item.review}
         </p>
       )}
@@ -57,7 +59,7 @@ export const PlaceViewer: React.FC<Props> = ({ place, onClose }) => {
   return (
     <>
       <div className={styles.modalOverlay} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-        <div className={styles.modalContent} style={{ maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div className={styles.modalContent} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
           <div className={styles.modalHeader} style={{ borderBottom: 'none', paddingBottom: 0 }}>
             <h2 className={styles.modalTitle} style={{ fontSize: '24px' }}>{place.name}</h2>
             <button className={styles.closeBtn} onClick={onClose}><X size={24} /></button>
@@ -78,7 +80,7 @@ export const PlaceViewer: React.FC<Props> = ({ place, onClose }) => {
               )}
               {place.priceRange && (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px', color: 'var(--muted-text)', background: 'var(--bg-color)', padding: '4px 8px', borderRadius: '12px' }}>
-                  {place.priceRange}
+                  {place.priceRange.includes('₹') ? place.priceRange : `₹ ${place.priceRange}`}
                 </span>
               )}
             </div>
@@ -106,9 +108,12 @@ export const PlaceViewer: React.FC<Props> = ({ place, onClose }) => {
                 <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
                   Food Reviews
                 </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Horizontal Scrolling Container */}
+                <div style={{ display: 'flex', flexDirection: 'row', gap: '16px', overflowX: 'auto', paddingBottom: '12px', scrollSnapType: 'x mandatory' }}>
                   {place.foodItems.map(item => (
-                    <FoodItemView key={item.id} item={item} onImageClick={setFullScreenImage} />
+                    <div key={item.id} style={{ scrollSnapAlign: 'start' }}>
+                      <FoodItemView item={item} onImageClick={setFullScreenImage} />
+                    </div>
                   ))}
                 </div>
               </div>
