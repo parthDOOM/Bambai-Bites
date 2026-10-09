@@ -2,7 +2,7 @@ import { get, set, del } from 'idb-keyval';
 import type { BoardState, Tier } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { db, storage, isFirebaseConfigured } from './firebase';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useEffect, useState } from 'react';
 
@@ -66,12 +66,50 @@ export const useBoardSync = (): [BoardState, (state: BoardState) => void, boolea
   return [board, saveBoard, isLoaded];
 };
 
+
+
+const fileToBase64Compressed = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 400;
+        const MAX_HEIGHT = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/webp', 0.8));
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = error => reject(error);
+  });
+};
+
 export const saveImage = async (file: File): Promise<string> => {
   const id = uuidv4();
   if (isFirebaseConfigured) {
-    const storageRef = ref(storage, `images/${id}`);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
+    const base64 = await fileToBase64Compressed(file);
+    await setDoc(doc(db, 'images', id), { data: base64 }).catch(console.error);
+    return id; // ID acts as the document ID
   } else {
     await set(`img-${id}`, file);
     return id;
@@ -79,20 +117,32 @@ export const saveImage = async (file: File): Promise<string> => {
 };
 
 export const loadImage = async (id: string): Promise<string | null> => {
-  if (id.startsWith('https://')) return id; // It's already a Firebase URL
+  if (id.startsWith('https://')) return id; // Fallback for old direct URLs if any
+  
+  if (isFirebaseConfigured) {
+    try {
+      const docSnap = await getDoc(doc(db, 'images', id));
+      if (docSnap.exists()) {
+        return docSnap.data().data; // Base64 string directly used as image src
+      }
+    } catch (e) {
+      console.error("Failed to load image from Firestore", e);
+    }
+  }
+  
+  // Local fallback
   const file = await get<File>(`img-${id}`);
   return file ? URL.createObjectURL(file) : null;
 };
 
 export const deleteImage = async (id: string) => {
-  if (id.startsWith('https://')) {
-    if (isFirebaseConfigured) {
-      const storageRef = ref(storage, id); // Works if it's the full URL
-      await deleteObject(storageRef).catch(console.error);
-    }
-  } else {
-    await del(`img-${id}`);
+  if (id.startsWith('https://')) return; // Ignore old Firebase Storage URLs
+  
+  if (isFirebaseConfigured) {
+    // Delete from Firestore, no big deal if it fails
+    setDoc(doc(db, 'images', id), { deleted: true }).catch(console.error);
   }
+  await del(`img-${id}`);
 };
 
 // ... keep exportData and importData for local backups if needed
