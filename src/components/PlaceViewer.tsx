@@ -56,6 +56,13 @@ const FoodItemView: React.FC<{ item: FoodItem; onImageClick: (url: string) => vo
 export const PlaceViewer: React.FC<Props> = ({ place, onClose }) => {
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
   return (
     <>
       <div className={styles.modalOverlay} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>

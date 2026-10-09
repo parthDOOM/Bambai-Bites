@@ -33,8 +33,8 @@ export const PlaceTile: React.FC<PlaceTileProps> = ({ place, onEdit, onView }) =
 
   const hasDetails = place.recommendations || place.area || place.notes || place.priceRange;
 
-  const handleTileClick = (e: React.MouseEvent | React.PointerEvent) => {
-    e.stopPropagation();
+  const handleTileClick = () => {
+    // Do NOT stop propagation here, otherwise dnd-kit never receives the pointer-up event and gets stuck in dragging mode!
     onView();
   };
 
@@ -59,7 +59,7 @@ export const PlaceTile: React.FC<PlaceTileProps> = ({ place, onEdit, onView }) =
           color: place.textColor || '#ffffff',
         }}
         onClick={handleTileClick}
-        onPointerUp={handleTileClick} // Fallback for mobile if onClick is swallowed
+        onPointerUp={handleTileClick}
         onPointerEnter={(e) => { if (e.pointerType === 'mouse') setShowTooltip(true); }}
         onPointerLeave={(e) => { if (e.pointerType === 'mouse') setShowTooltip(false); }}
       >
@@ -67,6 +67,7 @@ export const PlaceTile: React.FC<PlaceTileProps> = ({ place, onEdit, onView }) =
         <button 
           className={styles.editBtn} 
           onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); onEdit(); }}
           title="Edit Place"
         >
@@ -101,6 +102,7 @@ export const PlaceTile: React.FC<PlaceTileProps> = ({ place, onEdit, onView }) =
       <button 
         className={styles.editBtn} 
         onPointerDown={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
         onClick={(e) => { e.stopPropagation(); onEdit(); }}
         title="Edit Place"
       >

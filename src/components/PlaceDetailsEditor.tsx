@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { Place, Tier, TileType } from '../types';
 import { saveImage, deleteImage } from '../store';
 import styles from '../styles/PlaceTile.module.css';
@@ -31,6 +31,13 @@ export const PlaceDetailsEditor: React.FC<Props> = ({ place, tiers, onSave, onDe
   
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   const handleSave = async () => {
     if (!name.trim()) return;
