@@ -145,6 +145,7 @@ export const PlaceViewer: React.FC<Props> = ({ place, onClose }) => {
             src={fullScreenImage} 
             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} 
             alt="Fullscreen View"
+            onClick={(e) => e.stopPropagation()}
           />
           <button 
             onClick={() => setFullScreenImage(null)}
@@ -152,6 +153,32 @@ export const PlaceViewer: React.FC<Props> = ({ place, onClose }) => {
           >
             <X size={24} />
           </button>
+          
+          {(() => {
+            const imgs = Array.from(document.querySelectorAll(`.${styles.modalContent} img`)) as HTMLImageElement[];
+            const idx = imgs.findIndex(img => img.src === fullScreenImage);
+            
+            return (
+              <>
+                {idx > 0 && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setFullScreenImage(imgs[idx - 1].src); }}
+                    style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '24px' }}
+                  >
+                    ←
+                  </button>
+                )}
+                {idx !== -1 && idx < imgs.length - 1 && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setFullScreenImage(imgs[idx + 1].src); }}
+                    style={{ position: 'absolute', right: '20px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '24px' }}
+                  >
+                    →
+                  </button>
+                )}
+              </>
+            );
+          })()}
         </div>
       )}
     </>

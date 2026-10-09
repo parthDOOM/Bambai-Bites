@@ -33,14 +33,15 @@ export const PlaceTile: React.FC<PlaceTileProps> = ({ place, onEdit, onView }) =
 
   const hasDetails = place.recommendations || place.area || place.notes || place.priceRange;
 
-  const handleTileClick = () => {
+  const handleTileClick = (e: React.MouseEvent | React.PointerEvent) => {
+    e.stopPropagation();
     onView();
   };
 
   const Tooltip = () => {
     if (!hasDetails || !showTooltip) return null;
     return (
-      <div className={styles.tooltip}>
+      <div className={`${styles.tooltip} ${styles.desktopOnlyTooltip}`}>
         {place.area && <div className={styles.tooltipRow}><strong>Area:</strong> {place.area}</div>}
         {place.recommendations && <div className={styles.tooltipRow}><strong>Try:</strong> {place.recommendations}</div>}
         {place.priceRange && <div className={styles.tooltipRow}><strong>Price:</strong> {place.priceRange}</div>}
@@ -58,6 +59,7 @@ export const PlaceTile: React.FC<PlaceTileProps> = ({ place, onEdit, onView }) =
           color: place.textColor || '#ffffff',
         }}
         onClick={handleTileClick}
+        onPointerUp={handleTileClick} // Fallback for mobile if onClick is swallowed
         onPointerEnter={(e) => { if (e.pointerType === 'mouse') setShowTooltip(true); }}
         onPointerLeave={(e) => { if (e.pointerType === 'mouse') setShowTooltip(false); }}
       >
@@ -79,6 +81,7 @@ export const PlaceTile: React.FC<PlaceTileProps> = ({ place, onEdit, onView }) =
     <div 
       className={`${styles.tile} ${styles.photoTile}`} 
       onClick={handleTileClick}
+      onPointerUp={handleTileClick}
       onPointerEnter={(e) => { if (e.pointerType === 'mouse') setShowTooltip(true); }}
       onPointerLeave={(e) => { if (e.pointerType === 'mouse') setShowTooltip(false); }}
     >

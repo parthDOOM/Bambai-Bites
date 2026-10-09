@@ -128,6 +128,12 @@
   text-align: left;
 }
 
+@media (hover: none) or (max-width: 768px) {
+  .desktopOnlyTooltip {
+    display: none !important;
+  }
+}
+
 .tooltipRow {
   margin-bottom: 4px;
   word-break: break-word;
