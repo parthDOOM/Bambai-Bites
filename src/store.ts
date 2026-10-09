@@ -57,7 +57,9 @@ export const useBoardSync = (): [BoardState, React.Dispatch<React.SetStateAction
     setBoard((prev) => {
       const newState = typeof value === 'function' ? value(prev) : value;
       if (isFirebaseConfigured) {
-        setDoc(doc(db, 'boards', 'shared'), newState).catch(console.error);
+        // Firestore doesn't accept undefined values, so we stringify/parse to strip them out
+        const sanitizedState = JSON.parse(JSON.stringify(newState));
+        setDoc(doc(db, 'boards', 'shared'), sanitizedState).catch(console.error);
       } else {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
       }
