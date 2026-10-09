@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { Place, FoodItem } from '../types';
 import { loadImage } from '../store';
-import styles from '../styles/PlaceTile.module.css';
+import styles from '../styles/App.module.css';
 import { X, MapPin, Tag } from 'lucide-react';
 
 interface Props {
@@ -52,25 +52,7 @@ const FoodItemView: React.FC<{ item: FoodItem; onImageClick: (url: string) => vo
 };
 
 export const PlaceViewer: React.FC<Props> = ({ place, onClose }) => {
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    if (place.type === 'photo' && place.photoId) {
-      loadImage(place.photoId).then((url) => {
-        if (active && url) {
-          setPhotoUrl(url);
-        }
-      });
-    }
-    return () => {
-      active = false;
-      if (photoUrl && !photoUrl.startsWith('http')) {
-        URL.revokeObjectURL(photoUrl);
-      }
-    };
-  }, [place.photoId, place.type]);
 
   return (
     <>
@@ -82,14 +64,6 @@ export const PlaceViewer: React.FC<Props> = ({ place, onClose }) => {
           </div>
 
           <div style={{ padding: '0 24px 24px' }}>
-            {place.type === 'photo' && photoUrl && (
-              <img 
-                src={photoUrl} 
-                alt={place.name} 
-                onClick={() => setFullScreenImage(photoUrl)}
-                style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '8px', marginTop: '16px', cursor: 'pointer' }} 
-              />
-            )}
 
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '16px' }}>
               {place.area && (
