@@ -25,12 +25,14 @@ import { TierRow } from './components/TierRow';
 import { PlaceTile } from './components/PlaceTile';
 import { SortableTile } from './components/SortableTile';
 import { PlaceDetailsEditor } from './components/PlaceDetailsEditor';
+import { PlaceViewer } from './components/PlaceViewer';
 import { Download, Upload, Image as ImageIcon, Plus, X } from 'lucide-react';
 import styles from './styles/App.module.css';
 
 function App() {
   const [board, setBoard, isLoaded] = useBoardSync();
   const [editingPlace, setEditingPlace] = useState<Place | null | undefined>(undefined);
+  const [viewingPlace, setViewingPlace] = useState<Place | null>(null);
   const [editingTier, setEditingTier] = useState<Tier | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   
@@ -347,6 +349,7 @@ function App() {
                 tier={tier}
                 places={getTierPlaces(tier.id)}
                 onPlaceClick={setEditingPlace}
+                onPlaceView={setViewingPlace}
                 onEditTier={setEditingTier}
                 onMoveTierUp={(id) => moveTier(id, -1)}
                 onMoveTierDown={(id) => moveTier(id, 1)}
@@ -366,7 +369,7 @@ function App() {
                   <h3 className={styles.unrankedTitle}>Unranked & Needs a Verdict</h3>
                   <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px', minHeight: '60px'}}>
                     {unrankedPlaces.map(place => (
-                      <SortableTile key={place.id} place={place} onEdit={setEditingPlace} />
+                      <SortableTile key={place.id} place={place} onEdit={setEditingPlace} onView={setViewingPlace} />
                     ))}
                     {unrankedPlaces.length === 0 && (
                       <p style={{color: 'var(--muted-text)', fontSize: '0.9rem', padding: '12px'}}>
@@ -384,7 +387,7 @@ function App() {
         <DragOverlay dropAnimation={{
           sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }),
         }}>
-          {activePlace ? <PlaceTile place={activePlace} onEdit={() => {}} /> : null}
+          {activePlace ? <PlaceTile place={activePlace} onEdit={() => {}} onView={() => {}} /> : null}
         </DragOverlay>
       </DndContext>
 
@@ -395,6 +398,13 @@ function App() {
           onSave={handleSavePlace}
           onDelete={handleDeletePlace}
           onClose={() => setEditingPlace(undefined)}
+        />
+      )}
+
+      {viewingPlace && (
+        <PlaceViewer 
+          place={viewingPlace} 
+          onClose={() => setViewingPlace(null)} 
         />
       )}
 

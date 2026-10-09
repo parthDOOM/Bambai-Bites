@@ -10,6 +10,7 @@ interface TierRowProps {
   tier: Tier;
   places: Place[];
   onPlaceClick: (place: Place) => void;
+  onPlaceView: (place: Place) => void;
   onEditTier: (tier: Tier) => void;
   onMoveTierUp: (id: string) => void;
   onMoveTierDown: (id: string) => void;
@@ -20,6 +21,7 @@ export const TierRow: React.FC<TierRowProps> = ({
   tier,
   places,
   onPlaceClick,
+  onPlaceView,
   onEditTier,
   onMoveTierUp,
   onMoveTierDown,
@@ -53,7 +55,7 @@ export const TierRow: React.FC<TierRowProps> = ({
           strategy={rectSortingStrategy}
         >
           {places.map(place => (
-            <SortableTile key={place.id} place={place} onEdit={onPlaceClick} />
+            <SortableTile key={place.id} place={place} onEdit={onPlaceClick} onView={onPlaceView} />
           ))}
         </SortableContext>
       </div>

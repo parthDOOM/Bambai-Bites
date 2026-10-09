@@ -27,6 +27,7 @@ export const PlaceDetailsEditor: React.FC<Props> = ({ place, tiers, onSave, onDe
   const [cuisine, setCuisine] = useState(place?.cuisine || '');
   const [priceRange, setPriceRange] = useState(place?.priceRange || '');
   const [notes, setNotes] = useState(place?.notes || '');
+  const [foodItems, setFoodItems] = useState(place?.foodItems || []);
   
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -61,6 +62,7 @@ export const PlaceDetailsEditor: React.FC<Props> = ({ place, tiers, onSave, onDe
       cuisine,
       priceRange,
       notes,
+      foodItems,
     };
     
     onSave(updatedPlace);
@@ -246,6 +248,80 @@ export const PlaceDetailsEditor: React.FC<Props> = ({ place, tiers, onSave, onDe
             placeholder="Best to visit early morning..." 
           />
         </div>
+
+        <hr style={{margin: '24px 0', borderColor: 'var(--border-color)', borderTop: 'none'}} />
+        
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
+          <h3 style={{fontSize: '16px', margin: 0}}>Food Items & Reviews</h3>
+          <button 
+            type="button"
+            onClick={() => setFoodItems([...foodItems, { id: crypto.randomUUID(), name: '', review: '', stars: 0 }])}
+            style={{padding: '6px 12px', background: 'var(--primary-color)', color: 'white', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '12px'}}
+          >
+            + Add Item
+          </button>
+        </div>
+
+        {foodItems.map((item, index) => (
+          <div key={item.id} style={{padding: '12px', background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', marginBottom: '12px'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px'}}>
+              <input 
+                type="text" 
+                placeholder="Item Name (e.g. Vada Pav)" 
+                value={item.name}
+                onChange={e => {
+                  const newItems = [...foodItems];
+                  newItems[index].name = e.target.value;
+                  setFoodItems(newItems);
+                }}
+                className={styles.formInput}
+                style={{flex: 1, marginRight: '12px', marginBottom: 0}}
+              />
+              <button 
+                type="button"
+                onClick={() => setFoodItems(foodItems.filter(f => f.id !== item.id))}
+                style={{background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer'}}
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+            <textarea 
+              placeholder="Your review for this item..." 
+              value={item.review}
+              onChange={e => {
+                const newItems = [...foodItems];
+                newItems[index].review = e.target.value;
+                setFoodItems(newItems);
+              }}
+              className={styles.formTextarea}
+              style={{minHeight: '60px', marginBottom: '8px'}}
+            />
+            <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+              <span style={{fontSize: '12px', color: 'var(--muted-text)', marginRight: '8px'}}>Rating:</span>
+              {[1, 2, 3, 4, 5].map(star => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => {
+                    const newItems = [...foodItems];
+                    newItems[index].stars = star;
+                    setFoodItems(newItems);
+                  }}
+                  style={{
+                    background: 'none', 
+                    border: 'none', 
+                    cursor: 'pointer', 
+                    fontSize: '18px', 
+                    padding: 0,
+                    color: star <= item.stars ? '#eab308' : 'var(--border-color)'
+                  }}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
 
         <div className={styles.modalActions}>
           {!isNew && (

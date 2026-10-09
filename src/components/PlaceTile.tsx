@@ -7,9 +7,10 @@ import { Pencil } from 'lucide-react';
 interface PlaceTileProps {
   place: Place;
   onEdit: () => void;
+  onView: () => void;
 }
 
-export const PlaceTile: React.FC<PlaceTileProps> = ({ place, onEdit }) => {
+export const PlaceTile: React.FC<PlaceTileProps> = ({ place, onEdit, onView }) => {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
 
@@ -33,10 +34,7 @@ export const PlaceTile: React.FC<PlaceTileProps> = ({ place, onEdit }) => {
   const hasDetails = place.recommendations || place.area || place.notes || place.priceRange;
 
   const handleTileClick = () => {
-    // If it's a touch device, toggle tooltip
-    if (window.matchMedia('(hover: none)').matches) {
-      setShowTooltip(prev => !prev);
-    }
+    onView();
   };
 
   const Tooltip = () => {

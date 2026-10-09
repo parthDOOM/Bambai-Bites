@@ -8,9 +8,10 @@ import styles from '../styles/PlaceTile.module.css';
 interface SortableTileProps {
   place: Place;
   onEdit: (place: Place) => void;
+  onView: (place: Place) => void;
 }
 
-export const SortableTile: React.FC<SortableTileProps> = ({ place, onEdit }) => {
+export const SortableTile: React.FC<SortableTileProps> = ({ place, onEdit, onView }) => {
   const {
     attributes,
     listeners,
@@ -34,7 +35,7 @@ export const SortableTile: React.FC<SortableTileProps> = ({ place, onEdit }) => 
       {...listeners}
       className={isDragging ? styles.tileDragging : undefined}
     >
-      <PlaceTile place={place} onEdit={() => onEdit(place)} />
+      <PlaceTile place={place} onEdit={() => onEdit(place)} onView={() => onView(place)} />
     </div>
   );
 };

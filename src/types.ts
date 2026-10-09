@@ -7,6 +7,13 @@ export interface Tier {
   textColor: string;
 }
 
+export interface FoodItem {
+  id: string;
+  name: string;
+  review: string;
+  stars: number;
+}
+
 export interface Place {
   id: string;
   name: string;
@@ -27,6 +34,7 @@ export interface Place {
   cuisine?: string;
   priceRange?: string;
   notes?: string;
+  foodItems?: FoodItem[];
 }
 
 export interface BoardState {
