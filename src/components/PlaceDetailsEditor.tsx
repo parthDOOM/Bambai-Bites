@@ -62,7 +62,7 @@ export const PlaceDetailsEditor: React.FC<Props> = ({ place, tiers, onSave, onDe
       cuisine,
       priceRange,
       notes,
-      foodItems,
+      foodItems: foodItems.filter(f => f.name.trim() !== '' || !!f.photoId),
     };
     
     onSave(updatedPlace);
@@ -296,29 +296,53 @@ export const PlaceDetailsEditor: React.FC<Props> = ({ place, tiers, onSave, onDe
               className={styles.formTextarea}
               style={{minHeight: '60px', marginBottom: '8px'}}
             />
-            <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
-              <span style={{fontSize: '12px', color: 'var(--muted-text)', marginRight: '8px'}}>Rating:</span>
-              {[1, 2, 3, 4, 5].map(star => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => {
-                    const newItems = [...foodItems];
-                    newItems[index].stars = star;
-                    setFoodItems(newItems);
-                  }}
-                  style={{
-                    background: 'none', 
-                    border: 'none', 
-                    cursor: 'pointer', 
-                    fontSize: '18px', 
-                    padding: 0,
-                    color: star <= item.stars ? '#eab308' : 'var(--border-color)'
-                  }}
-                >
-                  ★
-                </button>
-              ))}
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+              <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+                <span style={{fontSize: '12px', color: 'var(--muted-text)', marginRight: '8px'}}>Rating:</span>
+                {[1, 2, 3, 4, 5].map(star => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => {
+                      const newItems = [...foodItems];
+                      newItems[index].stars = star;
+                      setFoodItems(newItems);
+                    }}
+                    style={{
+                      background: 'none', 
+                      border: 'none', 
+                      cursor: 'pointer', 
+                      fontSize: '18px', 
+                      padding: 0,
+                      color: star <= item.stars ? '#eab308' : 'var(--border-color)'
+                    }}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+              <div style={{fontSize: '12px'}}>
+                <label style={{cursor: 'pointer', color: 'var(--primary-color)'}}>
+                  {item.photoId ? '📷 Photo Added (Change)' : '+ Add Photo'}
+                  <input 
+                    type="file" 
+                    accept="image/jpeg, image/png, image/webp"
+                    style={{display: 'none'}}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const id = await saveImage(file);
+                        const newItems = [...foodItems];
+                        if (newItems[index].photoId) {
+                          await deleteImage(newItems[index].photoId!);
+                        }
+                        newItems[index].photoId = id;
+                        setFoodItems(newItems);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
             </div>
           </div>
         ))}

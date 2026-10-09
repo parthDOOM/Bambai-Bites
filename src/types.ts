@@ -12,6 +12,7 @@ export interface FoodItem {
   name: string;
   review: string;
   stars: number;
+  photoId?: string;
 }
 
 export interface Place {
