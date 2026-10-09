@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import type { Place, FoodItem } from '../types';
 import { loadImage } from '../store';
 import styles from '../styles/App.module.css';
-import { X, MapPin, Tag } from 'lucide-react';
+import { X, MapPin, Tag, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Props {
   place: Place;
@@ -55,6 +55,23 @@ const FoodItemView: React.FC<{ item: FoodItem; onImageClick: (url: string) => vo
 
 export const PlaceViewer: React.FC<Props> = ({ place, onClose }) => {
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, [place.foodItems]);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -63,9 +80,20 @@ export const PlaceViewer: React.FC<Props> = ({ place, onClose }) => {
     };
   }, []);
 
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const amount = 300;
+      scrollContainerRef.current.scrollBy({ left: direction === 'left' ? -amount : amount, behavior: 'smooth' });
+    }
+  };
+
   return (
     <>
-      <div className={styles.modalOverlay} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div 
+        className={styles.modalOverlay} 
+        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        onPointerDown={(e) => e.stopPropagation()}
+      >
         <div className={styles.modalContent} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
           <div className={styles.modalHeader} style={{ borderBottom: 'none', paddingBottom: 0 }}>
             <h2 className={styles.modalTitle} style={{ fontSize: '24px' }}>{place.name}</h2>
@@ -115,13 +143,40 @@ export const PlaceViewer: React.FC<Props> = ({ place, onClose }) => {
                 <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>
                   Food Reviews
                 </h3>
-                {/* Horizontal Scrolling Container */}
-                <div style={{ display: 'flex', flexDirection: 'row', gap: '16px', overflowX: 'auto', paddingBottom: '12px', scrollSnapType: 'x mandatory' }}>
-                  {place.foodItems.map(item => (
-                    <div key={item.id} style={{ scrollSnapAlign: 'start' }}>
-                      <FoodItemView item={item} onImageClick={setFullScreenImage} />
-                    </div>
-                  ))}
+                
+                <div style={{ position: 'relative' }}>
+                  {/* Left Arrow */}
+                  {canScrollLeft && (
+                    <button 
+                      onClick={() => scroll('left')}
+                      style={{ position: 'absolute', left: '-12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10, background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.3)', padding: 0 }}
+                    >
+                      <ChevronLeft size={20} />
+                    </button>
+                  )}
+
+                  {/* Horizontal Scrolling Container */}
+                  <div 
+                    ref={scrollContainerRef}
+                    onScroll={checkScroll}
+                    style={{ display: 'flex', flexDirection: 'row', gap: '16px', overflowX: 'auto', paddingBottom: '12px', scrollSnapType: 'x mandatory', scrollbarWidth: 'none' }}
+                  >
+                    {place.foodItems.map(item => (
+                      <div key={item.id} style={{ scrollSnapAlign: 'start' }}>
+                        <FoodItemView item={item} onImageClick={setFullScreenImage} />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Right Arrow */}
+                  {canScrollRight && (
+                    <button 
+                      onClick={() => scroll('right')}
+                      style={{ position: 'absolute', right: '-12px', top: '50%', transform: 'translateY(-50%)', zIndex: 10, background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 6px rgba(0,0,0,0.3)', padding: 0 }}
+                    >
+                      <ChevronRight size={20} />
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -142,7 +197,7 @@ export const PlaceViewer: React.FC<Props> = ({ place, onClose }) => {
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             backgroundColor: 'rgba(0, 0, 0, 0.85)',
             backdropFilter: 'blur(8px)',
-            zIndex: 9999,
+            zIndex: 999999,
             display: 'flex', justifyContent: 'center', alignItems: 'center',
             padding: '20px'
           }}
@@ -156,36 +211,10 @@ export const PlaceViewer: React.FC<Props> = ({ place, onClose }) => {
           />
           <button 
             onClick={() => setFullScreenImage(null)}
-            style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0, lineHeight: 1 }}
           >
             <X size={24} />
           </button>
-          
-          {(() => {
-            const imgs = Array.from(document.querySelectorAll(`.${styles.modalContent} img`)) as HTMLImageElement[];
-            const idx = imgs.findIndex(img => img.src === fullScreenImage);
-            
-            return (
-              <>
-                {idx > 0 && (
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setFullScreenImage(imgs[idx - 1].src); }}
-                    style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '24px' }}
-                  >
-                    ←
-                  </button>
-                )}
-                {idx !== -1 && idx < imgs.length - 1 && (
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setFullScreenImage(imgs[idx + 1].src); }}
-                    style={{ position: 'absolute', right: '20px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '24px' }}
-                  >
-                    →
-                  </button>
-                )}
-              </>
-            );
-          })()}
         </div>
       )}
     </>

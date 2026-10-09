@@ -15,12 +15,11 @@ interface Props {
 
 export const PlaceDetailsEditor: React.FC<Props> = ({ place, tiers, onSave, onDelete, onClose }) => {
   const isNew = !place;
-  const [type, setType] = useState<TileType>(place?.type || 'name');
   const [name, setName] = useState(place?.name || '');
   const [tierId, setTierId] = useState<string | null>(place?.tierId || null);
   const [backgroundColor, setBackgroundColor] = useState(place?.backgroundColor || '#f97316');
   const [textColor, setTextColor] = useState(place?.textColor || '#ffffff');
-  const [photoId] = useState<string | undefined>(place?.photoId);
+  const [photoId, setPhotoId] = useState<string | undefined>(place?.photoId);
   const [mapsUrl, setMapsUrl] = useState(place?.mapsUrl || '');
   const [address, setAddress] = useState(place?.address || '');
   const [area, setArea] = useState(place?.area || '');
@@ -40,29 +39,37 @@ export const PlaceDetailsEditor: React.FC<Props> = ({ place, tiers, onSave, onDe
     };
   }, []);
 
+  const handleRemovePhoto = () => {
+    setPhotoId(undefined);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleSave = async () => {
     if (!name.trim()) return;
     
     setIsSaving(true);
-    let finalPhotoId = photoId;
+    let finalPhotoId = photoId === 'temp' ? undefined : photoId;
+    let computedType: TileType = 'name';
     
     const file = fileInputRef.current?.files?.[0];
-    if (type === 'photo' && file) {
-      if (photoId) {
+    if (file) {
+      if (photoId && photoId !== 'temp') {
         await deleteImage(photoId); // delete old
       }
       finalPhotoId = await saveImage(file);
     }
 
+    if (finalPhotoId) computedType = 'photo';
+
     const updatedPlace: Place = {
       id: place?.id || crypto.randomUUID(),
       name,
-      type,
+      type: computedType,
       tierId: tierId === 'unranked' ? null : tierId,
       order: place?.order || 0,
-      backgroundColor: type === 'name' ? backgroundColor : undefined,
+      backgroundColor: computedType === 'name' ? backgroundColor : undefined,
       textColor,
-      photoId: type === 'photo' ? finalPhotoId : undefined,
+      photoId: computedType === 'photo' ? finalPhotoId : undefined,
       mapsUrl,
       address,
       area,
@@ -78,26 +85,15 @@ export const PlaceDetailsEditor: React.FC<Props> = ({ place, tiers, onSave, onDe
   };
 
   return (
-    <div className={appStyles.modalOverlay} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div 
+      className={appStyles.modalOverlay} 
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
       <div className={appStyles.modalContent}>
         <div className={appStyles.modalHeader}>
           <h2 className={appStyles.modalTitle}>{isNew ? 'Add Place' : 'Edit Place'}</h2>
           <button className={appStyles.closeBtn} onClick={onClose}><X size={20} /></button>
-        </div>
-
-        <div className={styles.typeTabs}>
-          <button 
-            className={`${styles.typeTab} ${type === 'name' ? styles.typeTabActive : ''}`}
-            onClick={() => setType('name')}
-          >
-            Name Tile
-          </button>
-          <button 
-            className={`${styles.typeTab} ${type === 'photo' ? styles.typeTabActive : ''}`}
-            onClick={() => setType('photo')}
-          >
-            Photo Tile
-          </button>
         </div>
 
         <div className={styles.formGroup}>
@@ -112,10 +108,43 @@ export const PlaceDetailsEditor: React.FC<Props> = ({ place, tiers, onSave, onDe
           />
         </div>
 
-        {type === 'name' && (
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Tile Colors</label>
-            <div className={styles.colorPickerRow}>
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Photo (Optional)</label>
+          <input 
+            type="file" 
+            accept="image/jpeg, image/png, image/webp" 
+            ref={fileInputRef}
+            className={styles.formInput}
+            onChange={(e) => {
+              if (e.target.files?.[0] && !photoId) {
+                // Just trigger re-render to hide background color
+                setPhotoId('temp');
+              } else if (!e.target.files?.[0] && photoId === 'temp') {
+                setPhotoId(undefined);
+              }
+            }}
+          />
+          {photoId && (
+            <div style={{display: 'flex', alignItems: 'center', marginTop: '8px', gap: '8px'}}>
+              <p style={{fontSize: '12px', color: 'var(--primary-color)', margin: 0}}>✓ Photo attached</p>
+              <button 
+                type="button" 
+                onClick={handleRemovePhoto}
+                style={{fontSize: '12px', background: 'none', border: '1px solid var(--border-color)', borderRadius: '4px', padding: '2px 6px', cursor: 'pointer', color: 'var(--muted-text)'}}
+              >
+                Remove
+              </button>
+            </div>
+          )}
+          <p style={{fontSize: '12px', color: 'var(--muted-text)', marginTop: '4px'}}>
+            {photoId ? 'A photo makes this a Photo Tile.' : 'Leave empty to make a colorful Name Tile.'}
+          </p>
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Tile Colors</label>
+          <div className={styles.colorPickerRow}>
+            {!photoId && (
               <div>
                 <label style={{fontSize: '12px', display: 'block'}}>Background</label>
                 <input 
@@ -125,34 +154,9 @@ export const PlaceDetailsEditor: React.FC<Props> = ({ place, tiers, onSave, onDe
                   onChange={e => setBackgroundColor(e.target.value)} 
                 />
               </div>
-              <div>
-                <label style={{fontSize: '12px', display: 'block'}}>Text</label>
-                <input 
-                  type="color" 
-                  className={styles.colorInput} 
-                  value={textColor} 
-                  onChange={e => setTextColor(e.target.value)} 
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {type === 'photo' && (
-          <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Photo</label>
-            <input 
-              type="file" 
-              accept="image/jpeg, image/png, image/webp" 
-              ref={fileInputRef}
-              className={styles.formInput}
-            />
-            {photoId && !fileInputRef.current?.files?.[0] && (
-              <p style={{fontSize: '12px', color: 'var(--muted-text)', marginTop: '4px'}}>Current photo is saved. Uploading a new one will replace it.</p>
             )}
-            
-            <div className={styles.formGroup} style={{marginTop: '12px'}}>
-              <label className={styles.formLabel}>Title Text Color</label>
+            <div>
+              <label style={{fontSize: '12px', display: 'block'}}>Text</label>
               <input 
                 type="color" 
                 className={styles.colorInput} 
@@ -161,7 +165,7 @@ export const PlaceDetailsEditor: React.FC<Props> = ({ place, tiers, onSave, onDe
               />
             </div>
           </div>
-        )}
+        </div>
 
         <div className={styles.formGroup}>
           <label className={styles.formLabel}>Tier Assignment</label>
