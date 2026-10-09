@@ -20,7 +20,7 @@ import * as htmlToImage from 'html-to-image';
 import { v4 as uuidv4 } from 'uuid';
 
 import type { BoardState, Place, Tier } from './types';
-import { loadState, saveState, exportData, importData } from './store';
+import { useBoardSync, exportData, importData } from './store';
 import { TierRow } from './components/TierRow';
 import { PlaceTile } from './components/PlaceTile';
 import { SortableTile } from './components/SortableTile';
@@ -29,26 +29,13 @@ import { Download, Upload, Image as ImageIcon, Plus, X } from 'lucide-react';
 import styles from './styles/App.module.css';
 
 function App() {
-  const [board, setBoard] = useState<BoardState>({ title: '', tiers: [], places: [] });
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [board, setBoard, isLoaded] = useBoardSync();
   const [editingPlace, setEditingPlace] = useState<Place | null | undefined>(undefined);
   const [editingTier, setEditingTier] = useState<Tier | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   
   const [activePlace, setActivePlace] = useState<Place | null>(null);
   const boardRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const s = loadState();
-    setBoard(s);
-    setIsLoaded(true);
-  }, []);
-
-  useEffect(() => {
-    if (isLoaded) {
-      saveState(board);
-    }
-  }, [board, isLoaded]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

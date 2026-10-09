@@ -1,6 +1,10 @@
 import { get, set, del } from 'idb-keyval';
 import type { BoardState, Tier } from './types';
 import { v4 as uuidv4 } from 'uuid';
+import { db, storage, isFirebaseConfigured } from './firebase';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { useEffect, useState } from 'react';
 
 const STORAGE_KEY = 'bambai-bites-state';
 
@@ -18,60 +22,82 @@ const DEFAULT_STATE: BoardState = {
   places: [],
 };
 
-export const loadState = (): BoardState => {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch (e) {
-      console.error('Failed to parse saved state', e);
-    }
-  }
-  return DEFAULT_STATE;
-};
+export const useBoardSync = (): [BoardState, (state: BoardState) => void, boolean] => {
+  const [board, setBoard] = useState<BoardState>(DEFAULT_STATE);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-export const saveState = (state: BoardState) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  useEffect(() => {
+    if (isFirebaseConfigured) {
+      const unsubscribe = onSnapshot(doc(db, 'boards', 'shared'), (docSnap) => {
+        if (docSnap.exists()) {
+          setBoard(docSnap.data() as BoardState);
+        } else {
+          setDoc(doc(db, 'boards', 'shared'), DEFAULT_STATE);
+          setBoard(DEFAULT_STATE);
+        }
+        setIsLoaded(true);
+      }, (error) => {
+        console.error("Firestore sync error (check rules?):", error);
+        setIsLoaded(true); // Stop loading if error
+      });
+      return () => unsubscribe();
+    } else {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          setBoard(JSON.parse(saved));
+        } catch (e) {
+          console.error('Failed to parse saved state', e);
+        }
+      }
+      setIsLoaded(true);
+    }
+  }, []);
+
+  const saveBoard = (newState: BoardState) => {
+    setBoard(newState); // Optimistic UI update
+    if (isFirebaseConfigured) {
+      setDoc(doc(db, 'boards', 'shared'), newState).catch(console.error);
+    } else {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+    }
+  };
+
+  return [board, saveBoard, isLoaded];
 };
 
 export const saveImage = async (file: File): Promise<string> => {
   const id = uuidv4();
-  await set(`img-${id}`, file);
-  return id;
+  if (isFirebaseConfigured) {
+    const storageRef = ref(storage, `images/${id}`);
+    await uploadBytes(storageRef, file);
+    return await getDownloadURL(storageRef);
+  } else {
+    await set(`img-${id}`, file);
+    return id;
+  }
 };
 
 export const loadImage = async (id: string): Promise<string | null> => {
+  if (id.startsWith('https://')) return id; // It's already a Firebase URL
   const file = await get<File>(`img-${id}`);
-  if (file) {
-    return URL.createObjectURL(file);
-  }
-  return null;
+  return file ? URL.createObjectURL(file) : null;
 };
 
 export const deleteImage = async (id: string) => {
-  await del(`img-${id}`);
+  if (id.startsWith('https://')) {
+    if (isFirebaseConfigured) {
+      const storageRef = ref(storage, id); // Works if it's the full URL
+      await deleteObject(storageRef).catch(console.error);
+    }
+  } else {
+    await del(`img-${id}`);
+  }
 };
 
+// ... keep exportData and importData for local backups if needed
 export const exportData = async (state: BoardState) => {
-  const exportObject: any = {
-    version: 1,
-    state,
-    images: {}
-  };
-  
-  // Extract all photo IDs
-  const photoIds = state.places.filter(p => p.type === 'photo' && p.photoId).map(p => p.photoId!);
-  
-  // Read all photos into base64
-  for (const id of photoIds) {
-    const file = await get<File>(`img-${id}`);
-    if (file) {
-      const base64 = await fileToBase64(file);
-      exportObject.images[id] = base64;
-    }
-  }
-  
-  const blob = new Blob([JSON.stringify(exportObject)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({version: 2, state})], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -84,36 +110,9 @@ export const importData = async (file: File): Promise<BoardState | null> => {
   try {
     const text = await file.text();
     const data = JSON.parse(text);
-    if (!data.state) return null;
-    
-    // Restore images
-    if (data.images) {
-      for (const [id, base64] of Object.entries(data.images)) {
-        const imgFile = await base64ToFile(base64 as string, id);
-        await set(`img-${id}`, imgFile);
-      }
-    }
-    
-    return data.state;
+    return data.state || null;
   } catch (e) {
     console.error('Import failed', e);
     return null;
   }
-};
-
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-  });
-};
-
-const base64ToFile = async (base64: string, filename: string): Promise<File> => {
-  const res = await fetch(base64);
-  const buf = await res.arrayBuffer();
-  // We don't have the original mimetype easily without parsing, so we just assume a generic one or read it from data url
-  const mimeType = base64.match(/data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+).*,.*/)?.[1] || 'image/jpeg';
-  return new File([buf], filename, { type: mimeType });
 };
