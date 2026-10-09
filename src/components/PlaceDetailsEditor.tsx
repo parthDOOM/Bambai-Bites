@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { Place, Tier, TileType } from '../types';
 import { saveImage, deleteImage } from '../store';
 import styles from '../styles/PlaceTile.module.css';
+import appStyles from '../styles/App.module.css';
 import { X, Trash2 } from 'lucide-react';
 
 interface Props {
@@ -77,11 +78,11 @@ export const PlaceDetailsEditor: React.FC<Props> = ({ place, tiers, onSave, onDe
   };
 
   return (
-    <div className={styles.modalOverlay} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className={styles.modalContent}>
-        <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>{isNew ? 'Add Place' : 'Edit Place'}</h2>
-          <button className={styles.closeBtn} onClick={onClose}><X size={20} /></button>
+    <div className={appStyles.modalOverlay} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className={appStyles.modalContent}>
+        <div className={appStyles.modalHeader}>
+          <h2 className={appStyles.modalTitle}>{isNew ? 'Add Place' : 'Edit Place'}</h2>
+          <button className={appStyles.closeBtn} onClick={onClose}><X size={20} /></button>
         </div>
 
         <div className={styles.typeTabs}>
