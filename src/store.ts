@@ -1,9 +1,8 @@
 import { get, set, del } from 'idb-keyval';
 import type { BoardState, Tier } from './types';
 import { v4 as uuidv4 } from 'uuid';
-import { db, storage, isFirebaseConfigured } from './firebase';
+import { db, isFirebaseConfigured } from './firebase';
 import { doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useEffect, useState } from 'react';
 
 const STORAGE_KEY = 'bambai-bites-state';
@@ -22,7 +21,7 @@ const DEFAULT_STATE: BoardState = {
   places: [],
 };
 
-export const useBoardSync = (): [BoardState, (state: BoardState) => void, boolean] => {
+export const useBoardSync = (): [BoardState, React.Dispatch<React.SetStateAction<BoardState>>, boolean] => {
   const [board, setBoard] = useState<BoardState>(DEFAULT_STATE);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -54,13 +53,16 @@ export const useBoardSync = (): [BoardState, (state: BoardState) => void, boolea
     }
   }, []);
 
-  const saveBoard = (newState: BoardState) => {
-    setBoard(newState); // Optimistic UI update
-    if (isFirebaseConfigured) {
-      setDoc(doc(db, 'boards', 'shared'), newState).catch(console.error);
-    } else {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-    }
+  const saveBoard = (value: React.SetStateAction<BoardState>) => {
+    setBoard((prev) => {
+      const newState = typeof value === 'function' ? value(prev) : value;
+      if (isFirebaseConfigured) {
+        setDoc(doc(db, 'boards', 'shared'), newState).catch(console.error);
+      } else {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+      }
+      return newState;
+    });
   };
 
   return [board, saveBoard, isLoaded];

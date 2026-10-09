@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { 
   DndContext, 
   DragOverlay, 
@@ -19,7 +19,7 @@ import {
 import * as htmlToImage from 'html-to-image';
 import { v4 as uuidv4 } from 'uuid';
 
-import type { BoardState, Place, Tier } from './types';
+import type { Place, Tier } from './types';
 import { useBoardSync, exportData, importData } from './store';
 import { TierRow } from './components/TierRow';
 import { PlaceTile } from './components/PlaceTile';
